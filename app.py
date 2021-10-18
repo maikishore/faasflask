@@ -6,7 +6,9 @@ from youtube_transcript_api import YouTubeTranscriptApi
 import spacy
 
 import re
+from fastpunct import FastPunct
 
+import textwrap
 from flask import Flask, request
 from flask.globals import g
 
@@ -36,7 +38,7 @@ def videotranscript():
         transcripts = transcript_list.find_transcript(['de', 'en'])
        
       
-       # print(transcripts)
+       # #print(transcripts)
         x = {
             
             "captions":transcript,
@@ -45,7 +47,7 @@ def videotranscript():
         
         }
     except Exception as e:
-       # print(e)
+       # #print(e)
         x = {
             "captions": ["Subtitles other than youtube videos comming soon!"],
           
@@ -71,11 +73,13 @@ def entities():
         for each in doc.ents:
             entity_list.append(each.text)
 
+        for each in doc:
+            if each.tag_=="NNP":
+                entity_list.append(each.text)
+
         if len(entity_list) == 0:
             res.append({'key': 0, 'label': "None"})
-        print("text")
-        print("=======>", entity_list)
-
+       
         for each in range(0, len(entity_list)):
             if entity_list[each] not in t:
                 res.append({'key': each, 'label': entity_list[each]})
@@ -85,10 +89,55 @@ def entities():
 
         return json.dumps(data)
     except Exception as e:
-        print(e)
+        ##print(e)
 
         return {'entities': []}
 
 
+
+@app.route("/grammer", methods=["GET", "POST"])
+
+def VideoNoteGrammer():
+
+    fastpunct = FastPunct()
+    data = json.loads(request.data)
+    text=""
+    #print("==>data",data["note"])
+
+    try:
+        note=data["note"]
+
+        if len(note)>=1000:
+            text=note[:1000]
+        else:
+            text=note
+        text_wraps=textwrap.wrap(text,200)
+        k=fastpunct.punct(
+               text_wraps
+                 )
+     
+        s=""
+        for each in k:
+            s=s+" "+each
+        if len(note)>=1000:
+
+            s=s+" "+note[1000:]
+
+    
+    
+        
+     
+    
+    
+        return json.dumps({"note": s})
+
+    except Exception as e:
+        
+        return str(e)
+
+    return "100"
+
+
+
 if __name__ == "__main__":
-    app.run(port=5000, debug=True)
+    app.run(port=8000, debug=False)
